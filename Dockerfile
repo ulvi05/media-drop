@@ -13,17 +13,21 @@ RUN npm install -g pnpm
 
 WORKDIR /app
 
-RUN echo "strict-peer-dependencies=false" >> .npmrc
+RUN echo "strict-peer-dependencies=false" > .npmrc
+RUN echo "node-linker=hoisted" >> .npmrc
 
 COPY package.json pnpm-lock.yaml* ./
 
 RUN pnpm install --no-frozen-lockfile
 
-COPY . .  
+COPY . . 
+
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
 
 RUN pnpm run build
 
 EXPOSE 3000
-
 ENV PORT=3000
+
 CMD ["pnpm", "start"]
