@@ -15,8 +15,10 @@ WORKDIR /app
 
 RUN echo "strict-peer-dependencies=false" > .npmrc
 RUN echo "node-linker=hoisted" >> .npmrc
+RUN echo "only-built-dependencies[]=" >> .npmrc 
 
 COPY package.json pnpm-lock.yaml* ./
+
 
 RUN pnpm install --no-frozen-lockfile
 
@@ -24,7 +26,6 @@ COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
-
 RUN pnpm run build
 
 EXPOSE 3000
