@@ -13,12 +13,13 @@ RUN npm install -g pnpm
 
 WORKDIR /app
 
+RUN echo "strict-peer-dependencies=false" >> .npmrc
+
 COPY package.json pnpm-lock.yaml* ./
 
-RUN pnpm config set strict-peer-dependencies false
-RUN pnpm install
+RUN pnpm install --no-frozen-lockfile
 
-COPY . .    
+COPY . .  
 
 RUN pnpm run build
 
