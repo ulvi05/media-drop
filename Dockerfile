@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     && chmod a+rx /usr/local/bin/yt-dlp \
     && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g pnpm@9-0
+RUN npm install -g pnpm@9
 
 WORKDIR /app
 
@@ -18,8 +18,6 @@ RUN echo "strict-peer-dependencies=false" > .npmrc && \
     echo "node-linker=hoisted" >> .npmrc
 
 COPY package.json pnpm-lock.yaml* ./
-
-ENV SHARP_IGNORE_GLOBAL_LIBUV=1
 
 RUN pnpm install --no-frozen-lockfile
 
