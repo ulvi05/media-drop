@@ -13,14 +13,12 @@ RUN npm install -g pnpm
 
 WORKDIR /app
 
-RUN echo "strict-peer-dependencies=false" > .npmrc
-RUN echo "node-linker=hoisted" >> .npmrc
-RUN echo "only-built-dependencies[]=" >> .npmrc 
+RUN pnpm config set strict-peer-dependencies false
+RUN pnpm config set node-linker hoisted
 
 COPY package.json pnpm-lock.yaml* ./
 
-
-RUN pnpm install --no-frozen-lockfile
+RUN pnpm install --no-frozen-lockfile --verify-store-integrity false
 
 COPY . . 
 
