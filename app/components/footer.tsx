@@ -1,6 +1,6 @@
 const Footer = () => {
   return (
-    <footer className="mt-20 py-10 text-center text-xs text-zinc-600">
+    <footer className="py-10 text-center text-xs text-zinc-600">
       <p>
         © {new Date().getFullYear()} Media Drop.{" "}
         <a
