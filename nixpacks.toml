@@ -2,7 +2,10 @@
 nixPkgs = ["yt-dlp", "ffmpeg"]
 
 [phases.install]
-cmds = ["pnpm install --no-frozen-lockfile"]
+cmds = ["npm install"]
+
+[phases.build]
+cmds = ["npm run build"]
 
 [start]
-cmd = "pnpm build && pnpm start"
+cmd = "npm start"
