@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-/* ===== BASE THEME ===== */
 :root {
   --bg: #0a0a0a;
   --card: rgba(255, 255, 255, 0.04);
@@ -8,19 +7,51 @@
   --text: #ededed;
 }
 
-/* ===== BODY ===== */
 body {
   background: var(--bg);
   color: var(--text);
   font-family:
+    "Inter",
     system-ui,
     -apple-system,
-    Segoe UI,
-    Roboto,
-    Arial;
+    "Segoe UI",
+    "Roboto",
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* ===== ANIMATIONS ===== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+::selection {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+}
+
+::-moz-selection {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+}
+
 @keyframes float {
   0% {
     transform: translateY(0px);
@@ -35,26 +66,4 @@ body {
 
 .animate-float {
   animation: float 4s ease-in-out infinite;
-}
-
-@keyframes wave {
-  0% {
-    transform: rotate(0deg);
-  }
-  25% {
-    transform: rotate(15deg);
-  }
-  50% {
-    transform: rotate(-10deg);
-  }
-  75% {
-    transform: rotate(15deg);
-  }
-  100% {
-    transform: rotate(0deg);
-  }
-}
-
-.animate-wave {
-  animation: wave 0.6s ease-in-out;
 }

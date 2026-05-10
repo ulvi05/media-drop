@@ -1,7 +1,17 @@
 const Footer = () => {
   return (
     <footer className="mt-20 py-10 text-center text-xs text-zinc-600">
-      <p>© {new Date().getFullYear()} Media Drop. Built with Next.js</p>
+      <p>
+        © {new Date().getFullYear()} Media Drop.{" "}
+        <a
+          href="https://ulvi.space"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-zinc-400 transition-all duration-300 hover:underline underline-offset-2"
+        >
+          Ulvi Aghazade
+        </a>
+      </p>
     </footer>
   );
 };
