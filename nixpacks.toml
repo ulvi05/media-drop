@@ -1,8 +1,8 @@
 [phases.setup]
 nixPkgs = ["yt-dlp", "ffmpeg"]
 
-[start]
-cmd = "pnpm start"
+[phases.install]
+cmds = ["pnpm install --no-frozen-lockfile"]
 
-[variables]
-NEXT_PUBLIC_TIMEOUT = "300000"
+[start]
+cmd = "pnpm build && pnpm start"
