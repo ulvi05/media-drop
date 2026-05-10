@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["yt-dlp", "ffmpeg"]
+
+[start]
+cmd = "pnpm start"
+
+[variables]
+NEXT_PUBLIC_TIMEOUT = "300000"
