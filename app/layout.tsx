@@ -19,6 +19,21 @@ export const metadata: Metadata = {
   title: "Media Drop",
   description:
     "Media Drop is a free online tool that allows you to convert your media files to different formats. It supports a wide range of formats, including MP3, WAV, FLAC, and more. With Media Drop, you can easily convert your media files without the need for any software installation.",
+  applicationName: "Media Drop",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
+      { url: "/favicon-16x16.png", type: "image/png", sizes: "16x16" },
+    ],
+    apple: [
+      {
+        url: "/apple-touch-icon.png",
+        type: "image/png",
+        sizes: "180x180",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
