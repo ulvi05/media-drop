@@ -1,36 +1,132 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Media Drop
+
+Media Drop is a fast, lightweight media conversion tool for turning YouTube and TikTok videos into MP3 or MP4 downloads. It is built to feel like a simple SaaS product: clean workflow, instant feedback, and no unnecessary friction.
+
+## What it does
+
+- Paste a supported video URL
+- Preview the media before converting
+- Download as MP3 or MP4
+- Keep the flow clean with no signup, no ads, no extra steps
+
+## Why it feels good to use
+
+- Fast metadata lookup before conversion
+- Simple two-format interface
+- Streaming-based download flow
+- Clean UI built with Next.js and Tailwind CSS
+
+## Tech Stack
+
+- Next.js 16
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- `yt-dlp` for metadata and conversion
+- `ffmpeg` for audio and video processing
+
+## Requirements
+
+For local development, make sure these are installed and available on your PATH:
+
+- Node.js 22+
+- pnpm 9+
+- `yt-dlp`
+- `ffmpeg`
+
+If you use Docker, the image already includes `yt-dlp` and `ffmpeg`.
 
 ## Getting Started
 
-First, run the development server:
+Install dependencies:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Run the development server:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Learn More
+## Available Scripts
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+pnpm dev
+pnpm build
+pnpm start
+pnpm lint
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## How It Works
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Paste a YouTube or TikTok link.
+2. The app calls `/api/info` to fetch the title, duration, thumbnail, and platform data.
+3. Choose MP3 or MP4.
+4. The app calls `/api/convert` and streams the converted file back as a download.
 
-## Deploy on Vercel
+## API Routes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### `POST /api/info`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Fetches metadata for a supported video URL.
+
+Request body:
+
+```json
+{
+  "url": "https://www.youtube.com/watch?v=..."
+}
+```
+
+Response example:
+
+```json
+{
+  "title": "Example Video",
+  "duration": 123,
+  "thumbnail": "https://...",
+  "platform": "Youtube"
+}
+```
+
+### `POST /api/convert`
+
+Converts the URL to MP3 or MP4 and returns the file as a streamed download.
+
+Request body:
+
+```json
+{
+  "url": "https://www.youtube.com/watch?v=...",
+  "format": "mp3"
+}
+```
+
+Supported formats:
+
+- `mp3`
+- `mp4`
+
+## Docker
+
+Build the image:
+
+```bash
+docker build -t media-drop .
+```
+
+Run it:
+
+```bash
+docker run -p 3000:3000 media-drop
+```
+
+## Notes
+
+- Only YouTube and TikTok URLs are supported.
+- MP4 conversions are written temporarily to `public/downloads/` and removed after streaming.
+- The app uses the App Router manifest setup in `app/` for icons and install metadata.
