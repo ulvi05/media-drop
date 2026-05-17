@@ -1,19 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
-import { spawn, exec } from "child_process";
-import { promisify } from "util";
+import { spawn } from "child_process";
 import path from "path";
 import fs from "fs";
+import os from "os";
 
-const execAsync = promisify(exec);
+const requests = new Map<string, number[]>();
+
+function isRateLimited(ip: string) {
+  const now = Date.now();
+  const windowMs = 60_000;
+
+  const timestamps = requests.get(ip)?.filter((t) => now - t < windowMs) ?? [];
+
+  if (timestamps.length >= 10) {
+    return true;
+  }
+
+  timestamps.push(now);
+  requests.set(ip, timestamps);
+
+  return false;
+}
 
 function isValidVideoUrl(url: string) {
-  const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
-  const tiktokRegex = /^(https?:\/\/)?(www\.)?tiktok\.com\/.+$/;
-  return youtubeRegex.test(url) || tiktokRegex.test(url);
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.toLowerCase();
+
+    const allowedHosts = [
+      "youtube.com",
+      "www.youtube.com",
+      "m.youtube.com",
+      "youtu.be",
+
+      "tiktok.com",
+      "www.tiktok.com",
+      "m.tiktok.com",
+      "vt.tiktok.com",
+    ];
+
+    return allowedHosts.some(
+      (domain) => host === domain || host.endsWith(`.${domain}`),
+    );
+  } catch {
+    return false;
+  }
 }
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
+
+    if (isRateLimited(ip)) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const { url, format } = await req.json();
 
     if (!url) {
@@ -27,10 +68,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const fileName = `media-${Date.now()}.${format === "mp4" ? "mp4" : "mp3"}`;
+    const extension = format === "mp4" ? "mp4" : "mp3";
+
+    const fileName = `media-${Date.now()}.${extension}`;
 
     if (format === "mp3") {
-      const args = [
+      const ytdlp = spawn("yt-dlp", [
         "--extract-audio",
         "--audio-format",
         "mp3",
@@ -41,31 +84,27 @@ export async function POST(req: NextRequest) {
         "-o",
         "-",
         url,
-      ];
-
-      const ytdlp = spawn("yt-dlp", args);
+      ]);
 
       const stream = new ReadableStream({
         start(controller) {
           ytdlp.stdout.on("data", (chunk) => {
-            try {
-              controller.enqueue(chunk);
-            } catch {}
+            controller.enqueue(chunk);
           });
+
           ytdlp.stdout.on("end", () => {
-            try {
-              controller.close();
-            } catch {}
+            controller.close();
           });
-          ytdlp.stderr.on("data", (d) =>
-            console.error("yt-dlp:", d.toString()),
-          );
+
+          ytdlp.stderr.on("data", (data) => {
+            console.error("yt-dlp:", data.toString());
+          });
+
           ytdlp.on("error", (err) => {
-            try {
-              controller.error(err);
-            } catch {}
+            controller.error(err);
           });
         },
+
         cancel() {
           ytdlp.kill();
         },
@@ -77,61 +116,85 @@ export async function POST(req: NextRequest) {
           "Content-Disposition": `attachment; filename="${fileName}"`,
         },
       });
-    } else {
-      // MP4: diske indir, stream et, sil
-      const dir = path.join(process.cwd(), "public", "downloads");
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-
-      const outputPath = path.join(dir, fileName);
-
-      await execAsync(
-        `yt-dlp -f "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080][ext=mp4]/best" --merge-output-format mp4 -o "${outputPath}" "${url}"`,
-      );
-
-      if (!fs.existsSync(outputPath)) {
-        throw new Error("File could not be created");
-      }
-
-      // RAM'e yüklemek yerine stream et
-      const fileStream = fs.createReadStream(outputPath);
-
-      const stream = new ReadableStream({
-        start(controller) {
-          fileStream.on("data", (chunk) => {
-            try {
-              controller.enqueue(chunk);
-            } catch {}
-          });
-          fileStream.on("end", () => {
-            try {
-              controller.close();
-            } catch {}
-            fs.unlink(outputPath, () => {}); // stream bittikten sonra sil
-          });
-          fileStream.on("error", (err) => {
-            try {
-              controller.error(err);
-            } catch {}
-            fs.unlink(outputPath, () => {});
-          });
-        },
-        cancel() {
-          fileStream.destroy();
-          fs.unlink(outputPath, () => {});
-        },
-      });
-
-      return new NextResponse(stream, {
-        headers: {
-          "Content-Type": "video/mp4",
-          "Content-Disposition": `attachment; filename="${fileName}"`,
-        },
-      });
     }
+
+    const tempDir = os.tmpdir();
+    const outputPath = path.join(tempDir, fileName);
+
+    const ytdlp = spawn("yt-dlp", [
+      "-f",
+      "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080][ext=mp4]/best",
+      "--merge-output-format",
+      "mp4",
+      "-o",
+      outputPath,
+      url,
+    ]);
+
+    await new Promise<void>((resolve, reject) => {
+      let stderr = "";
+
+      ytdlp.stderr.on("data", (d) => {
+        stderr += d.toString();
+      });
+
+      ytdlp.on("close", (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(stderr || "yt-dlp failed"));
+        }
+      });
+
+      ytdlp.on("error", reject);
+    });
+
+    if (!fs.existsSync(outputPath)) {
+      throw new Error("File could not be created");
+    }
+
+    const fileStream = fs.createReadStream(outputPath);
+
+    const stream = new ReadableStream({
+      start(controller) {
+        fileStream.on("data", (chunk) => {
+          controller.enqueue(chunk);
+        });
+
+        fileStream.on("end", () => {
+          controller.close();
+
+          fs.unlink(outputPath, () => {});
+        });
+
+        fileStream.on("error", (err) => {
+          controller.error(err);
+
+          fs.unlink(outputPath, () => {});
+        });
+      },
+
+      cancel() {
+        fileStream.destroy();
+
+        fs.unlink(outputPath, () => {});
+      },
+    });
+
+    return new NextResponse(stream, {
+      headers: {
+        "Content-Type": "video/mp4",
+        "Content-Disposition": `attachment; filename="${fileName}"`,
+      },
+    });
   } catch (err) {
     console.error("ERROR:", err);
+
     return NextResponse.json(
-      { error: "Conversion failed", details: String(err) },
+      {
+        error: "Conversion failed",
+        details: String(err),
+      },
       { status: 500 },
     );
   }
